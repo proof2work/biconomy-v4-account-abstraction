@@ -89,7 +89,10 @@ export default function Home() {
           )
           const web3AuthSigner = ethersProvider.getSigner()
 
-          const smartWallet = await createBiconomySmartAccount(web3AuthSigner)
+          const smartWallet = await createBiconomySmartAccount(
+            web3AuthSigner,
+            chainConfig.rpcTarget
+          )
 
           setSmartAccount(smartWallet)
           const saAddress = await smartWallet.getAccountAddress()
