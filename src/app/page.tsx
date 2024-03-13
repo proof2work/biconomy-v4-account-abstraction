@@ -4,16 +4,12 @@ import { useEffect, useState } from "react"
 import { RadioGroup } from "@headlessui/react"
 import { CheckIcon, ArrowRightStartOnRectangleIcon } from "@heroicons/react/20/solid"
 import clsx from "clsx"
-import {
-  createSmartAccountClient,
-  BiconomySmartAccountV2,
-  PaymasterMode,
-} from "@biconomy/account"
 import { ethers } from "ethers"
 import { Web3Auth } from "@web3auth/modal"
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base"
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider"
-import { set } from "zod"
+import Image from "next/image"
+import { createBiconomySmartAccount } from "lib/biconomy"
 
 const tiers = [
   {
@@ -49,29 +45,8 @@ const chainConfig = {
   tickerName: "Polygon Matic",
 }
 
-const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig },
-})
-
-//Creating web3auth instance
-const web3auth = new Web3Auth({
-  clientId: process.env.NEXT_PUBLIC_WEB3AUTH_API_KEY,
-  web3AuthNetwork: "sapphire_devnet", // Web3Auth Network
-  chainConfig,
-  privateKeyProvider,
-  uiConfig: {
-    appName: "Biconomy X Web3Auth",
-    mode: "dark", // light, dark or auto
-    loginMethodsOrder: ["apple", "google", "twitter"],
-    logoLight: "https://web3auth.io/images/web3auth-logo.svg",
-    logoDark: "https://web3auth.io/images/web3auth-logo---Dark.svg",
-    defaultLanguage: "en", // en, de, ja, ko, zh, es, fr, pt, nl
-    loginGridCol: 3,
-    primaryButton: "socialLogin", // "externalLogin" | "socialLogin" | "emailLogin"
-  },
-})
-
 export default function Home() {
+  const [web3Auth, setWeb3Auth] = useState<Web3Auth | null>(null)
   const [smartAccount, setSmartAccount] = useState<BiconomySmartAccountV2 | null>(null)
   const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(null)
   const [provider, setProvider] = useState<IProvider | null>(null)
@@ -81,13 +56,48 @@ export default function Home() {
   useEffect(() => {
     const init = async () => {
       try {
+        const privateKeyProvider = new EthereumPrivateKeyProvider({
+          config: { chainConfig },
+        })
+
+        //Creating web3auth instance
+        const web3auth = new Web3Auth({
+          clientId: process.env.NEXT_PUBLIC_WEB3AUTH_API_KEY,
+          web3AuthNetwork: "sapphire_devnet", // Web3Auth Network
+          chainConfig,
+          privateKeyProvider,
+          uiConfig: {
+            appName: "Biconomy Account Abstraction",
+            mode: "dark", // light, dark or auto
+            loginMethodsOrder: ["apple", "google", "twitter"],
+            logoLight: "https://web3auth.io/images/web3auth-logo.svg",
+            logoDark: "https://web3auth.io/images/web3auth-logo---Dark.svg",
+            defaultLanguage: "en", // en, de, ja, ko, zh, es, fr, pt, nl
+            loginGridCol: 3,
+            primaryButton: "socialLogin", // "externalLogin" | "socialLogin" | "emailLogin"
+          },
+        })
+
         await web3auth.initModal()
-        setProvider(web3auth.provider)
 
         if (web3auth.connected) {
+          setProvider(web3auth.provider)
           setLoggedIn(true)
-          setLoading(false)
+
+          const ethersProvider = new ethers.providers.Web3Provider(
+            web3auth.provider as any
+          )
+          const web3AuthSigner = ethersProvider.getSigner()
+
+          const smartWallet = await createBiconomySmartAccount(web3AuthSigner)
+
+          setSmartAccount(smartWallet)
+          const saAddress = await smartWallet.getAccountAddress()
+          console.log("Smart Account Address", saAddress)
+          setSmartAccountAddress(saAddress)
         }
+        setWeb3Auth(web3auth)
+        setLoading(false)
       } catch (error) {
         console.error(error)
         setLoading(false)
@@ -100,30 +110,27 @@ export default function Home() {
   //create smart account
   const connect = async () => {
     setLoading(true)
+    if (!web3Auth) return null
     try {
-      const web3authProvider = await web3auth.connect()
-      setProvider(web3authProvider)
+      const web3AuthProvider = await web3Auth.connect()
 
-      if (web3auth.connected) {
+      if (web3Auth.connected) {
+        setProvider(web3AuthProvider)
         setLoggedIn(true)
+
+        const ethersProvider = new ethers.providers.Web3Provider(web3AuthProvider as any)
+        const web3AuthSigner = ethersProvider.getSigner()
+
+        const smartWallet = await createBiconomySmartAccount(
+          web3AuthSigner,
+          chainConfig.rpcTarget
+        )
+
+        setSmartAccount(smartWallet)
+        const saAddress = await smartWallet.getAccountAddress()
+        console.log("Smart Account Address", saAddress)
+        setSmartAccountAddress(saAddress)
       }
-
-      const ethersProvider = new ethers.providers.Web3Provider(web3authProvider as any)
-      const web3AuthSigner = ethersProvider.getSigner()
-
-      const smartWallet = await createSmartAccountClient({
-        chainId: 80001,
-        signer: web3AuthSigner,
-        biconomyPaymasterApiKey: process.env.NEXT_PUBLIC_BICONOMY_PAYMASTER_API_KEY,
-        bundlerUrl: process.env.NEXT_PUBLIC_BICONOMY_BUNDLER_URL,
-        rpcUrl: chainConfig.rpcTarget,
-      })
-
-      console.log("Biconomy Smart Account", smartWallet)
-      setSmartAccount(smartWallet)
-      const saAddress = await smartWallet.getAccountAddress()
-      console.log("Smart Account Address", saAddress)
-      setSmartAccountAddress(saAddress)
       setLoading(false)
     } catch (error) {
       console.error(error)
@@ -133,37 +140,46 @@ export default function Home() {
 
   const logout = async () => {
     setLoading(true)
-    await web3auth.logout()
+
+    if (!web3Auth) return
+
+    await web3Auth.logout()
     setProvider(null)
     setLoggedIn(false)
     setSmartAccount(null)
     setSmartAccountAddress(null)
     setLoading(false)
-    console.log("Logged out")
   }
 
   return (
     <main className="min-h-screen bg-gray-900 ">
       <nav className=" flex justify-end p-8">
         {loggedIn ? (
-          <button
-            onClick={() => logout()}
-            className="inline-flex gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300"
-          >
-            {" "}
-            {!loading ? (
-              <>
-                <ArrowRightStartOnRectangleIcon className="h-6 w-6" />
-                <span>Logout</span>
-              </>
-            ) : (
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-t-2 border-gray-300"></div>
-            )}
-          </button>
+          <div className="flex gap-2">
+            <span className="inline-flex gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300">
+              <Image src="/polygon-logo.svg" alt="Polygon Logo" width={20} height={20} />
+              {smartAccountAddress &&
+                smartAccountAddress.slice(0, 6) + "..." + smartAccountAddress.slice(-4)}
+            </span>
+            <button
+              onClick={() => logout()}
+              className="inline-flex gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300 transition-all duration-300 ease-in-out hover:bg-gray-700"
+            >
+              {" "}
+              {!loading ? (
+                <>
+                  <ArrowRightStartOnRectangleIcon className="h-6 w-6" />
+                  <span>Logout</span>
+                </>
+              ) : (
+                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-t-2 border-gray-300"></div>
+              )}
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => connect()}
-            className="bg-indigo-400 text-white font-semibold transition-all duration-300 ease-in-out hover:bg-indigo-500 rounded-lg px-3 py-2"
+            className="rounded-lg bg-indigo-500 px-3 py-2 font-semibold text-white transition-all duration-300 ease-in-out hover:bg-indigo-400"
           >
             Sign In
           </button>
@@ -193,7 +209,7 @@ export default function Home() {
             {!loggedIn && !loading && (
               <>
                 <button
-                  className="rounded-lg bg-indigo-400 px-4 py-3 text-xl font-bold text-white transition-all duration-300 ease-in-out hover:bg-indigo-500"
+                  className="rounded-lg bg-indigo-500 px-4 py-3 text-xl font-bold text-white transition-all duration-300 ease-in-out hover:bg-indigo-400"
                   onClick={() => connect()}
                 >
                   Sign in with Social Login
