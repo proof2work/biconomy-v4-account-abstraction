@@ -1,19 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { RadioGroup } from "@headlessui/react"
-import { CheckIcon, ArrowRightStartOnRectangleIcon } from "@heroicons/react/20/solid"
+import {
+  ArrowRightStartOnRectangleIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/20/solid"
 import clsx from "clsx"
 import { ethers } from "ethers"
 import { Web3Auth } from "@web3auth/modal"
-import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base"
+import { CHAIN_NAMESPACES } from "@web3auth/base"
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider"
 import Image from "next/image"
 import { createBiconomySmartAccount } from "lib/biconomy"
+import { BiconomySmartAccountV2 } from "@biconomy/account"
+import { GaslessTransactionButton } from "./components/GaslessTransactionButton"
+import { Address } from "viem"
 
 const tiers = [
   {
-    name: "Buy ERC20 with ERC20",
+    name: "Pay Transaction Fees with ERC20",
     id: "tier-freelancer",
     href: "#",
     price: { monthly: "$15", annually: "$144" },
@@ -48,8 +53,8 @@ const chainConfig = {
 export default function Home() {
   const [web3Auth, setWeb3Auth] = useState<Web3Auth | null>(null)
   const [smartAccount, setSmartAccount] = useState<BiconomySmartAccountV2 | null>(null)
-  const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(null)
-  const [provider, setProvider] = useState<IProvider | null>(null)
+  const [smartAccountAddress, setSmartAccountAddress] = useState<Address | null>(null)
+  const [provider, setProvider] = useState<ethers.providers.Provider | null>(null)
   const [loggedIn, setLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -62,7 +67,7 @@ export default function Home() {
 
         //Creating web3auth instance
         const web3auth = new Web3Auth({
-          clientId: process.env.NEXT_PUBLIC_WEB3AUTH_API_KEY,
+          clientId: process.env.NEXT_PUBLIC_WEB3AUTH_API_KEY as string,
           web3AuthNetwork: "sapphire_devnet", // Web3Auth Network
           chainConfig,
           privateKeyProvider,
@@ -81,7 +86,6 @@ export default function Home() {
         await web3auth.initModal()
 
         if (web3auth.connected) {
-          setProvider(web3auth.provider)
           setLoggedIn(true)
 
           const ethersProvider = new ethers.providers.Web3Provider(
@@ -93,7 +97,7 @@ export default function Home() {
             web3AuthSigner,
             chainConfig.rpcTarget
           )
-
+          setProvider(ethersProvider)
           setSmartAccount(smartWallet)
           const saAddress = await smartWallet.getAccountAddress()
           console.log("Smart Account Address", saAddress)
@@ -118,7 +122,6 @@ export default function Home() {
       const web3AuthProvider = await web3Auth.connect()
 
       if (web3Auth.connected) {
-        setProvider(web3AuthProvider)
         setLoggedIn(true)
 
         const ethersProvider = new ethers.providers.Web3Provider(web3AuthProvider as any)
@@ -129,6 +132,7 @@ export default function Home() {
           chainConfig.rpcTarget
         )
 
+        setProvider(ethersProvider)
         setSmartAccount(smartWallet)
         const saAddress = await smartWallet.getAccountAddress()
         console.log("Smart Account Address", saAddress)
@@ -159,11 +163,16 @@ export default function Home() {
       <nav className=" flex justify-end p-8">
         {loggedIn ? (
           <div className="flex gap-2">
-            <span className="inline-flex gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300">
+            <a
+              href={"https://mumbai.polygonscan.com/address/" + smartAccountAddress}
+              target="_blank"
+              className="flex items-center gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300 transition-all duration-300 ease-in-out hover:bg-gray-700"
+            >
               <Image src="/polygon-logo.svg" alt="Polygon Logo" width={20} height={20} />
               {smartAccountAddress &&
                 smartAccountAddress.slice(0, 6) + "..." + smartAccountAddress.slice(-4)}
-            </span>
+              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            </a>
             <button
               onClick={() => logout()}
               className="inline-flex gap-2 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300 transition-all duration-300 ease-in-out hover:bg-gray-700"
@@ -189,7 +198,7 @@ export default function Home() {
         )}
       </nav>
 
-      <div className="py-24 sm:py-32">
+      <div className="py-12">
         <div className="flex flex-col items-center justify-center">
           <div className="text-center">
             <h2 className="text-base font-semibold leading-7 text-indigo-400">
@@ -203,7 +212,7 @@ export default function Home() {
             Let's explore how to implement account abstraction in your dapp with Biconomy
           </p>
 
-          <div className="my-10 flex justify-center">
+          <div className="my-8 flex justify-center">
             {loading && (
               <div className="flex items-center justify-center gap-2">
                 <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
@@ -221,45 +230,31 @@ export default function Home() {
             )}
           </div>
           {loggedIn && (
-            <div className="flex items-center justify-center gap-10">
+            <div className="flex flex-col items-center gap-8">
               {tiers.map((tier) => (
                 <div
                   key={tier.id}
-                  className={clsx(
-                    tier.mostPopular
-                      ? "bg-white/5 ring-2 ring-indigo-500"
-                      : "ring-1 ring-white/10",
-                    "rounded-3xl p-8 xl:p-10"
-                  )}
+                  className="group cursor-pointer rounded-3xl p-8 ring-1 ring-white/10 transition-all duration-300 ease-in-out hover:ring-indigo-500 xl:p-10"
                 >
-                  <div className="flex items-center justify-between gap-x-4">
-                    <h3
-                      id={tier.id}
-                      className="text-lg font-semibold leading-8 text-white"
-                    >
-                      {tier.name}
-                    </h3>
-                    {tier.mostPopular ? (
-                      <p className="rounded-full bg-indigo-500 px-2.5 py-1 text-xs font-semibold leading-5 text-white">
-                        Most popular
+                  <div className="flex items-center justify-between gap-8">
+                    <div>
+                      <h3
+                        id={tier.id}
+                        className="text-lg font-semibold leading-8 text-white"
+                      >
+                        {tier.name}
+                      </h3>
+
+                      <p className="text-sm leading-6 text-gray-300">
+                        {tier.description}
                       </p>
-                    ) : null}
+                    </div>
+                    <GaslessTransactionButton
+                      smartAccount={smartAccount}
+                      userAddress={smartAccountAddress}
+                      provider={provider}
+                    />
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-gray-300">
-                    {tier.description}
-                  </p>
-                  <a
-                    href={tier.href}
-                    aria-describedby={tier.id}
-                    className={clsx(
-                      tier.mostPopular
-                        ? "bg-indigo-500 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline-indigo-500"
-                        : "bg-white/10 text-white hover:bg-white/20 focus-visible:outline-white",
-                      "mt-6 block rounded-md px-3 py-2 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                    )}
-                  >
-                    See Demo
-                  </a>
                 </div>
               ))}
             </div>
