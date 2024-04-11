@@ -1,28 +1,38 @@
+'use client'
+
 import { Provider } from "@ethersproject/providers"
-import MintContractABI from "lib/contracts/MintContractABI.json"
 import { BiconomySmartAccountV2, PaymasterMode } from "@biconomy/account"
-import { BigNumber, ethers } from "ethers"
+import { ethers } from "ethers"
 import { Address } from "viem"
 import toast from "react-hot-toast"
+import { useState } from "react"
+
+import MintContractABI from "lib/contracts/MintContractABI.json"
+import { contractsSepolia } from "config/contracts"
 
 export const GaslessTransactionButton = ({
   smartAccount,
   userAddress,
   provider,
 }: {
-  smartAccount: BiconomySmartAccountV2
+  smartAccount: BiconomySmartAccountV2 | null
   userAddress: Address | null
   provider: Provider | null
 }) => {
+  const [loading, setLoading] = useState<boolean>(false)
+
   //process gasless mint transaction
   const handleGaslessTransaction = async () => {
     const request = async () => {
-      const nftAddress = "0x67Fcd0Af88F8aF020aaee955D47eE8D70C8f608b" // smart contract address
+      if(!smartAccount || !provider) return null 
+
+      setLoading(true)
+      const nftAddress = contractsSepolia.p2wNft // smart contract address
 
       const contract = new ethers.Contract(nftAddress, MintContractABI, provider)
       const mintTx = await contract.populateTransaction.claim(
         userAddress,
-        1,
+        0,
         1,
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         0,
@@ -49,26 +59,60 @@ export const GaslessTransactionButton = ({
       })
       const { transactionHash } = await userOpResponse.waitForTxHash()
       console.log("Transaction Hash", transactionHash)
+      toast.success(
+        <a target="_blank" href={`${process.env.NEXT_PUBLIC_SEPOLIA_TX_EXPLORER}${transactionHash}`}>
+          Click to see on Etherscan
+        </a>
+      )
+
       const userOpReceipt = await userOpResponse.wait()
-      if (userOpReceipt.success == "true") {
-        console.log("UserOp receipt", userOpReceipt)
-        console.log("Transaction receipt", userOpReceipt.receipt)
+      console.log("UserOp receipt", userOpReceipt)
+      setLoading(false)
+      if (userOpReceipt.success != "true") {
+        throw new Error("Transaction failed")
       }
     }
 
-    toast.promise(request(), {
-      loading: "Waiting for transaction receipt...",
-      success: <b>Gasless transaction successful</b>,
-      error: <b>Transaction failed</b>,
-    })
+    toast.promise(
+      request(),
+      {
+        loading: "Transaction pending...",
+        success: <b>Transaction successful!</b>,
+        error: <b>Transaction failed</b>,
+      },
+      {
+        style: {
+          minWidth: "300px",
+        },
+      }
+    )
   }
 
   return (
-    <a
-      onClick={handleGaslessTransaction}
-      className="block rounded-md bg-white/10 px-3 py-2 text-center text-sm font-semibold leading-6 text-white hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white group-hover:bg-indigo-500"
-    >
-      Mint NFT
-    </a>
+    <div className="group cursor-pointer rounded-3xl p-8 ring-1 ring-white/10 transition-all duration-300 ease-in-out hover:ring-indigo-500 xl:p-10">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        <div>
+          <h3 className="text-lg font-semibold leading-8 text-white">
+            Send a Gasless Transaction
+          </h3>
+
+          <p className="text-sm leading-6 text-gray-300">
+            Use Biconomy Paymaster to sponsor the gas fees of a mint transaction
+          </p>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-indigo-500"></div>
+          </div>
+        ) : (
+          <a
+            onClick={handleGaslessTransaction}
+            className="block rounded-md bg-white/10 px-3 py-2 text-center text-sm font-semibold leading-6 text-white hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white group-hover:bg-indigo-500"
+          >
+            Mint P2W NFT
+          </a>
+        )}
+      </div>
+    </div>
   )
 }
