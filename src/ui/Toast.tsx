@@ -1,6 +1,6 @@
 import { Toaster } from "react-hot-toast"
 
-export const Toast = () => {
+const Toast = () => {
   return (
     <Toaster
       position="bottom-center"
@@ -10,17 +10,19 @@ export const Toast = () => {
       containerStyle={{}}
       toastOptions={{
         // Define default options
-        className: "bg-white text-black rounded-sm",
-        duration: 5000,
+        className: "bg-white text-black rounded-sm w-80",
+        duration: 4000,
 
         // Default options for specific types
         success: {
-          className: "bg-green-500 text-white",
+          className: "bg-green-500 text-white w-80",
         },
         loading: {
-          duration: Infinity
+          duration: Infinity,
         }
       }}
     />
   )
 }
+
+export default Toast
