@@ -8,7 +8,7 @@ import toast from "react-hot-toast"
 import { useState } from "react"
 
 import MintContractABI from "lib/contracts/MintContractABI.json"
-import { contractsSepolia } from "config/contracts"
+import { contracts } from "config/contracts"
 
 interface GaslessTransactionButtonProps {
   smartAccount: BiconomySmartAccountV2 | null
@@ -30,7 +30,7 @@ export default function GaslessTransactionButton({
         if (!smartAccount || !provider) return null
 
         setLoading(true)
-        const nftAddress = contractsSepolia.p2wNft // smart contract address
+        const nftAddress = contracts.sepolia.p2wNft // smart contract address
 
         const contract = new ethers.Contract(nftAddress, MintContractABI, provider)
         const mintTx = await contract.populateTransaction.claim(
@@ -61,22 +61,25 @@ export default function GaslessTransactionButton({
           },
         })
         const { transactionHash } = await userOpResponse.waitForTxHash()
-        console.log("Transaction Hash", transactionHash)
-        toast.success(
-          <a
-            target="_blank"
-            href={`${process.env.NEXT_PUBLIC_SEPOLIA_TX_EXPLORER}${transactionHash}`}
-          >
-            Click to see on Etherscan
-          </a>
-        )
 
         const userOpReceipt = await userOpResponse.wait()
-        console.log("UserOp receipt", userOpReceipt)
-        setLoading(false)
+
         if (userOpReceipt.success != "true") {
           throw new Error("Transaction failed")
+        } else {
+          toast.success(
+            <div className="flex flex-col items-center gap-1">
+              <strong>Mint P2W NFT Successful!</strong>
+              <a
+                target="_blank"
+                href={`${process.env.NEXT_PUBLIC_SEPOLIA_TX_EXPLORER}${transactionHash}`}
+              >
+                Click to see on Etherscan
+              </a>
+            </div>
+          )
         }
+        setLoading(false)
       } catch (error) {
         console.error(error)
         setLoading(false)
@@ -87,13 +90,13 @@ export default function GaslessTransactionButton({
     toast.promise(
       request(),
       {
-        loading: "Transaction pending...",
+        loading: "Transaction pending. Do not close window.",
         success: <b>Transaction successful!</b>,
         error: <b>Transaction failed</b>,
       },
       {
         style: {
-          minWidth: "300px",
+          minWidth: "400px",
         },
       }
     )
