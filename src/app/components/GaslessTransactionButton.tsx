@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { Provider } from "@ethersproject/providers"
 import { BiconomySmartAccountV2, PaymasterMode } from "@biconomy/account"
@@ -10,65 +10,76 @@ import { useState } from "react"
 import MintContractABI from "lib/contracts/MintContractABI.json"
 import { contractsSepolia } from "config/contracts"
 
-export const GaslessTransactionButton = ({
-  smartAccount,
-  userAddress,
-  provider,
-}: {
+interface GaslessTransactionButtonProps {
   smartAccount: BiconomySmartAccountV2 | null
   userAddress: Address | null
   provider: Provider | null
-}) => {
+}
+
+export default function GaslessTransactionButton({
+  smartAccount,
+  userAddress,
+  provider,
+}: GaslessTransactionButtonProps) {
   const [loading, setLoading] = useState<boolean>(false)
 
   //process gasless mint transaction
   const handleGaslessTransaction = async () => {
     const request = async () => {
-      if(!smartAccount || !provider) return null 
+      try {
+        if (!smartAccount || !provider) return null
 
-      setLoading(true)
-      const nftAddress = contractsSepolia.p2wNft // smart contract address
+        setLoading(true)
+        const nftAddress = contractsSepolia.p2wNft // smart contract address
 
-      const contract = new ethers.Contract(nftAddress, MintContractABI, provider)
-      const mintTx = await contract.populateTransaction.claim(
-        userAddress,
-        0,
-        1,
-        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        0,
-        [
-          ["0x0000000000000000000000000000000000000000000000000000000000000000"],
-          1,
+        const contract = new ethers.Contract(nftAddress, MintContractABI, provider)
+        const mintTx = await contract.populateTransaction.claim(
+          userAddress,
           0,
+          1,
           "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-        ],
-        "0x"
-      )
+          0,
+          [
+            ["0x0000000000000000000000000000000000000000000000000000000000000000"],
+            1,
+            0,
+            "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+          ],
+          "0x"
+        )
 
-      // Build the transaction
-      const tx = {
-        to: nftAddress,
-        data: mintTx.data as string,
-      }
+        // Build the transaction
+        const tx = {
+          to: nftAddress,
+          data: mintTx.data as string,
+        }
 
-      // Send the transaction and get the transaction hash
-      const userOpResponse = await smartAccount.sendTransaction(tx, {
-        paymasterServiceData: {
-          mode: PaymasterMode.SPONSORED,
-        },
-      })
-      const { transactionHash } = await userOpResponse.waitForTxHash()
-      console.log("Transaction Hash", transactionHash)
-      toast.success(
-        <a target="_blank" href={`${process.env.NEXT_PUBLIC_SEPOLIA_TX_EXPLORER}${transactionHash}`}>
-          Click to see on Etherscan
-        </a>
-      )
+        // Send the transaction and get the transaction hash
+        const userOpResponse = await smartAccount.sendTransaction(tx, {
+          paymasterServiceData: {
+            mode: PaymasterMode.SPONSORED,
+          },
+        })
+        const { transactionHash } = await userOpResponse.waitForTxHash()
+        console.log("Transaction Hash", transactionHash)
+        toast.success(
+          <a
+            target="_blank"
+            href={`${process.env.NEXT_PUBLIC_SEPOLIA_TX_EXPLORER}${transactionHash}`}
+          >
+            Click to see on Etherscan
+          </a>
+        )
 
-      const userOpReceipt = await userOpResponse.wait()
-      console.log("UserOp receipt", userOpReceipt)
-      setLoading(false)
-      if (userOpReceipt.success != "true") {
+        const userOpReceipt = await userOpResponse.wait()
+        console.log("UserOp receipt", userOpReceipt)
+        setLoading(false)
+        if (userOpReceipt.success != "true") {
+          throw new Error("Transaction failed")
+        }
+      } catch (error) {
+        console.error(error)
+        setLoading(false)
         throw new Error("Transaction failed")
       }
     }
@@ -90,11 +101,11 @@ export const GaslessTransactionButton = ({
 
   return (
     <div className="group cursor-pointer rounded-3xl p-8 ring-1 ring-white/10 transition-all duration-300 ease-in-out hover:ring-indigo-500 xl:p-10">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+      <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
         <div>
-          <h3 className="text-lg font-semibold leading-8 text-white">
+          <h2 className="text-lg font-semibold leading-8 text-white">
             Send a Gasless Transaction
-          </h3>
+          </h2>
 
           <p className="text-sm leading-6 text-gray-300">
             Use Biconomy Paymaster to sponsor the gas fees of a mint transaction
