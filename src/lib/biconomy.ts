@@ -6,7 +6,7 @@ import {
 import { ethers } from "ethers"
 import { Address } from "viem"
 
-import { contractsSepolia } from "config/contracts"
+import { contracts } from "config/contracts"
 import { sepoliaConfig } from "config/network"
 
 export const createBiconomySmartAccount = async (
@@ -24,8 +24,8 @@ export const createBiconomySmartAccount = async (
 export const getBalances = async (
   smartAccount: BiconomySmartAccountV2
 ): Promise<BalancePayload[]> => {
-  const erc20TokenAddress: Address = contractsSepolia.p2wToken as Address
-  const daiTokenAddress: Address = contractsSepolia.dai as Address
+  const erc20TokenAddress: Address = contracts.sepolia.p2wToken as Address
+  const daiTokenAddress: Address = contracts.sepolia.dai as Address
 
   return await smartAccount.getBalances([erc20TokenAddress, daiTokenAddress])
 }
