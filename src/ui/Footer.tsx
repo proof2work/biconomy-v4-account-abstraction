@@ -1,7 +1,7 @@
 const Footer = () => {
   return (
-    <footer className="absolute bottom-0 w-screen">
-      <div className="my-4 flex justify-center gap-1 text-sm text-white">
+    <footer>
+      <div className="my-4 flex justify-center gap-1 text-sm text-white/70">
         <span>Made with ❤️ by</span>
         <a
           href="https://proof2work.com"
