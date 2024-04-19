@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { ethers } from "ethers"
 import { Web3Auth } from "@web3auth/modal"
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider"
-import { BiconomySmartAccountV2 } from "@biconomy/account"
-import { Address, formatEther } from "viem"
+import { BalancePayload, BiconomySmartAccountV2 } from "@biconomy/account"
+import { Address } from "viem"
 
 import { createBiconomySmartAccount, getBalances } from "lib/biconomy"
 import { sepoliaConfig } from "config/network"
@@ -22,8 +22,7 @@ export default function Home() {
   const [provider, setProvider] = useState<ethers.providers.Provider | null>(null)
   const [loggedIn, setLoggedIn] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
-  const [daiBalance, setDaiBalance] = useState<string>("")
-  const [p2wBalance, setP2wBalance] = useState<string>("")
+  const [balances, setBalances] = useState<BalancePayload[]>([])
 
   /* Init Biconomy smart wallet */
   useEffect(() => {
@@ -65,8 +64,9 @@ export default function Home() {
           const balances = await getBalances(smartWallet)
           const saAddress = await smartWallet.getAccountAddress()
 
-          setP2wBalance(formatEther(balances[0].amount))
-          setDaiBalance(formatEther(balances[1].amount))
+          console.log("Balances", balances)
+
+          setBalances(balances)
           setProvider(ethersProvider)
           setSmartAccount(smartWallet)
           setSmartAccountAddress(saAddress)
@@ -99,8 +99,7 @@ export default function Home() {
         const saAddress = await smartWallet.getAccountAddress()
         const balances = await getBalances(smartWallet)
 
-        setP2wBalance(formatEther(balances[0].amount))
-        setDaiBalance(formatEther(balances[1].amount))
+        setBalances(balances)
         setProvider(ethersProvider)
         setSmartAccount(smartWallet)
         setSmartAccountAddress(saAddress)
@@ -125,6 +124,12 @@ export default function Home() {
     setLoading(false)
   }
 
+  const refresh = async () => {
+    if (!smartAccount) return
+    const balances = await getBalances(smartAccount)
+    setBalances(balances)
+  }
+
   return (
     <div className="relative min-h-screen">
       <header className="flex p-8 md:justify-end">
@@ -133,8 +138,7 @@ export default function Home() {
             smartAccountAddress={smartAccountAddress}
             loading={loading}
             logout={logout}
-            daiBalance={daiBalance}
-            p2wBalance={p2wBalance}
+            balances={balances}
           />
         ) : (
           <Button title="Sign In" onClick={connect} />
@@ -173,7 +177,11 @@ export default function Home() {
                   userAddress={smartAccountAddress}
                   provider={provider}
                 />
-                <PayFeesWithERC20Button smartAccount={smartAccount} provider={provider} />
+                <PayFeesWithERC20Button
+                  smartAccount={smartAccount}
+                  provider={provider}
+                  refresh={refresh}
+                />
               </div>
             )}
           </div>
