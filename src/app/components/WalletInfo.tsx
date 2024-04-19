@@ -6,24 +6,26 @@ import {
 
 import { shortenAddress } from "utils/strings"
 
-const WalletInfo = ({
-  smartAccountAddress,
-  loading,
-  logout,
-  daiBalance,
-  p2wBalance
-}: {
+interface WalletInfoProps {
   smartAccountAddress: string | null
   loading: boolean
   logout: () => void
   daiBalance: string
   p2wBalance: string
-}) => {
+}
+
+export default function WalletInfo ({
+  smartAccountAddress,
+  loading,
+  logout,
+  daiBalance,
+  p2wBalance
+}: WalletInfoProps) {
   return (
     <nav className="flex w-screen flex-col gap-1 md:w-fit md:flex-row md:gap-2">
       <div className="flex items-center justify-center gap-3 rounded-md bg-gray-800 px-3 py-2 font-semibold text-gray-300 transition-all duration-300 ease-in-out hover:bg-gray-700">
         <div className="flex gap-2">
-          <Image src="/p2w-logo.png" alt="Polygon Logo" width={24} height={24} />
+          <Image src="/p2w-logo-64.png" alt="Polygon Logo" width={24} height={24} />
           {Number(p2wBalance).toFixed(2)}
         </div>
         <div className="flex gap-2">
@@ -67,5 +69,3 @@ const WalletInfo = ({
     </nav>
   )
 }
-
-export default WalletInfo

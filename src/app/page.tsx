@@ -4,15 +4,13 @@ import { useEffect, useState } from "react"
 import { ethers } from "ethers"
 import { Web3Auth } from "@web3auth/modal"
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider"
-import { createBiconomySmartAccount, getBalances } from "lib/biconomy"
-import { BalancePayload, BiconomySmartAccountV2 } from "@biconomy/account"
-import { Address, formatEther, parseEther } from "viem"
+import { BiconomySmartAccountV2 } from "@biconomy/account"
+import { Address, formatEther } from "viem"
 
-import { contractsSepolia } from "config/contracts"
+import { createBiconomySmartAccount, getBalances } from "lib/biconomy"
 import { sepoliaConfig } from "config/network"
-import { GaslessTransactionButton } from "./components/GaslessTransactionButton"
-import { BatchTransactionButton } from "./components/BatchTransactionButton"
-import { PayFeesWithERC20Button } from "./components/PayFeesWithERC20Button"
+import GaslessTransactionButton from "./components/GaslessTransactionButton"
+import PayFeesWithERC20Button from "./components/PayFeesWithERC20Button"
 import WalletInfo from "./components/WalletInfo"
 import Footer from "ui/Footer"
 import Button from "ui/Button"
@@ -22,8 +20,8 @@ export default function Home() {
   const [smartAccount, setSmartAccount] = useState<BiconomySmartAccountV2 | null>(null)
   const [smartAccountAddress, setSmartAccountAddress] = useState<Address | null>(null)
   const [provider, setProvider] = useState<ethers.providers.Provider | null>(null)
-  const [loggedIn, setLoggedIn] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loggedIn, setLoggedIn] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
   const [daiBalance, setDaiBalance] = useState<string>("")
   const [p2wBalance, setP2wBalance] = useState<string>("")
 
@@ -61,6 +59,7 @@ export default function Home() {
           const ethersProvider = new ethers.providers.Web3Provider(
             web3auth.provider as any
           )
+
           const web3AuthSigner = ethersProvider.getSigner()
           const smartWallet = await createBiconomySmartAccount(web3AuthSigner)
           const balances = await getBalances(smartWallet)
@@ -145,15 +144,15 @@ export default function Home() {
         <div className="py-12">
           <div className="flex flex-col items-center justify-center">
             <div className="text-center">
-              <h2 className="text-base font-semibold leading-7 text-indigo-400">
+              <p className="text-base font-semibold leading-7 text-indigo-400">
                 Biconomy SDK v4
-              </h2>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                Account Abstraction by Examples
               </p>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                Account Abstraction by Examples
+              </h1>
             </div>
             <p className="mt-6 max-w-3xl text-center text-lg leading-8 text-gray-300">
-              Let's explore how to implement account abstraction in your dapp with
+              Let&apos;s explore how to implement account abstraction in your dapp with
               Biconomy
             </p>
 
@@ -175,11 +174,6 @@ export default function Home() {
                   provider={provider}
                 />
                 <PayFeesWithERC20Button smartAccount={smartAccount} provider={provider} />
-                <BatchTransactionButton
-                  smartAccount={smartAccount}
-                  userAddress={smartAccountAddress}
-                  provider={provider}
-                />
               </div>
             )}
           </div>
