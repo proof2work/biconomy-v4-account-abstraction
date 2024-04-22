@@ -30,7 +30,7 @@ export default function GaslessTransactionButton({
         if (!smartAccount || !provider) return null
 
         setLoading(true)
-        const nftAddress = contracts.sepolia.p2wNft // smart contract address
+        const nftAddress: string = contracts.sepolia.p2wNft // smart contract address
 
         const contract = new ethers.Contract(nftAddress, MintContractABI, provider)
         const mintTx = await contract.populateTransaction.claim(
@@ -53,13 +53,13 @@ export default function GaslessTransactionButton({
           to: nftAddress,
           data: mintTx.data as string,
         }
-
         // Send the transaction and get the transaction hash
         const userOpResponse = await smartAccount.sendTransaction(tx, {
           paymasterServiceData: {
             mode: PaymasterMode.SPONSORED,
           },
         })
+
         const { transactionHash } = await userOpResponse.waitForTxHash()
 
         const userOpReceipt = await userOpResponse.wait()

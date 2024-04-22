@@ -146,9 +146,9 @@ export default function PayFeesWithERC20Button({
 
           <p className="text-sm leading-6 text-gray-300">
             {"Let's get some testnet DAI token (gas is on the Paymaster's bill again!)"}
-            <div className="text-red-400">
+            <span className="block text-red-400">
               You need to send SepoliaETH to your smart account first.
-            </div>
+            </span>
           </p>
         </div>
         <div>
