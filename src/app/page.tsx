@@ -29,14 +29,14 @@ export default function Home() {
     const init = async () => {
       try {
         const privateKeyProvider = new EthereumPrivateKeyProvider({
-          config: { chainConfig: sepoliaConfig },
+          config: sepoliaConfig,
         })
 
         //Creating web3auth instance
         const web3auth = new Web3Auth({
           clientId: process.env.NEXT_PUBLIC_WEB3AUTH_API_KEY as string,
           web3AuthNetwork: "sapphire_devnet", // Web3Auth Network
-          chainConfig: sepoliaConfig,
+          chainConfig: sepoliaConfig.chainConfig,
           privateKeyProvider,
           uiConfig: {
             appName: "Biconomy Account Abstraction",
