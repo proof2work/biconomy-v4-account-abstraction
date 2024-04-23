@@ -137,7 +137,7 @@ export default function PayFeesWithERC20Button({
       <div className="flex flex-col justify-between gap-8">
         <div>
           <h2 className="mb-4 text-2xl font-semibold leading-8 text-white">
-            Batch Transaction
+            Transactions Sequence
           </h2>
 
           <h3 className="text-lg font-semibold leading-8 text-white">
@@ -178,7 +178,7 @@ export default function PayFeesWithERC20Button({
               onClick={handlePayFeesWithERC20}
               className="block rounded-md bg-white/10 px-3 py-2 text-center text-sm font-semibold leading-6 text-white hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white group-hover:bg-indigo-500"
             >
-              Batch Transaction
+              Start Transactions
             </a>
           )}
         </div>
