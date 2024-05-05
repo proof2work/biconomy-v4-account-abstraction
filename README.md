@@ -17,9 +17,9 @@ This repository shows how to use Biconomy's Account Abstraction features to send
 
 Built-in feature from Next.js:
 
-☕ Minify HTML & CSS
-💨 Live reload
-✅ Turbo for bundler optimization
+- ☕ Minify HTML & CSS
+- 💨 Live reload
+- ✅ Turbo for bundler optimization
 
 ## Getting started
 
@@ -27,6 +27,7 @@ Built-in feature from Next.js:
 yarn install
 yarn dev
 ```
+Create your Web3AuthAccount [here](https://web3auth.io/).
 
 ## Deploy on Vercel
 
